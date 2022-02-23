@@ -1,0 +1,59 @@
+version: '3.7'
+
+services:
+  app:
+    build:
+      context: ./
+      target: development
+    environment:
+      - DATABASE_HOST=database
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=development
+      - DATABASE_USER=devuser
+      - DATABASE_PASSWORD=devpassword
+      - REDIS_HOST=cache
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=devpassword
+    depends_on:
+      - nginx
+      - database
+      - cache
+    volumes:
+      - ./:/var/www/html/
+      - ./docker/php/development/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+      - ./docker/php/development/php.ini:/usr/local/etc/php/php.ini
+
+  nginx:
+    image: nginxinc/nginx-unprivileged:1.20-alpine
+    environment:
+      - NGINX_FAST_CGI_HOST=app
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./public/:/var/www/html/public/:ro
+
+  database:
+    image: mariadb:10.6.5
+    command: mysqld --collation-server=utf8mb4_unicode_ci --character-set-server=utf8mb4 --character-set-filesystem=utf8mb4
+    environment:
+      - MARIADB_ROOT_PASSWORD=rootpassword
+      - MARIADB_USER=devuser
+      - MARIADB_PASSWORD=devpassword
+      - MARIADB_DATABASE=development
+    ports:
+      - '3306:3306'
+    volumes:
+      - database:/var/lib/mysql/
+
+  cache:
+    image: redis:6.2
+    command: redis-server --requirepass devpassword
+    ports:
+      - '6379:6379'
+    volumes:
+      - cache:/data/
+
+volumes:
+  database:
+  cache:
