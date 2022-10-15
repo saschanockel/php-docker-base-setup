@@ -1,10 +1,13 @@
-version: '3.7'
+version: '3.8'
 
 services:
   app:
     build:
       context: ./
       target: development
+    extra_hosts:
+      # This makes host.docker.internal also work on Linux with Docker Engine >= 20.10.0
+      - host.docker.internal:host-gateway
     environment:
       - DATABASE_HOST=database
       - DATABASE_PORT=3306
@@ -24,7 +27,7 @@ services:
       - ./docker/php/development/php.ini:/usr/local/etc/php/php.ini
 
   nginx:
-    image: nginxinc/nginx-unprivileged:1.20-alpine
+    image: nginxinc/nginx-unprivileged:1.23-alpine
     environment:
       - NGINX_FAST_CGI_HOST=app
     ports:
@@ -34,7 +37,7 @@ services:
       - ./public/:/var/www/html/public/:ro
 
   database:
-    image: mariadb:10.6.5
+    image: mariadb:10.6.10
     command: mysqld --collation-server=utf8mb4_unicode_ci --character-set-server=utf8mb4 --character-set-filesystem=utf8mb4
     environment:
       - MARIADB_ROOT_PASSWORD=rootpassword
@@ -47,7 +50,7 @@ services:
       - database:/var/lib/mysql/
 
   cache:
-    image: redis:6.2
+    image: redis:7.0.5
     command: redis-server --requirepass devpassword
     ports:
       - '6379:6379'
